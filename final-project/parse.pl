@@ -1,10 +1,22 @@
 #!C:\Perl\bin\perl.exe
+################################################################################
+# Modules
+################################################################################
 use v5.14;
 use warnings;
 use strict;
 use Data::Dumper;
 
+################################################################################
+# Constants
+################################################################################
+my $TERM_WIDTH = 80;
+
+################################################################################
+# Variable Declarations
+################################################################################
 my %clients;
+my @uncatagorized;
 
 die "No files specified.\n" unless @ARGV;
 foreach my $arg (@ARGV)
@@ -83,7 +95,7 @@ foreach my $arg (@ARGV)
 					next; # ignore these
 				}
 				default {
-					say("No OS: " . $userAgent);
+					push @uncatagorized, $userAgent;
 				}
 			}
 
@@ -124,7 +136,7 @@ foreach my $arg (@ARGV)
 					next; # ignore these
 				}
 				default {
-					say("No Browser: " . $userAgent);
+					push @uncatagorized, $userAgent;
 				}
 			}
 		}
@@ -132,6 +144,76 @@ foreach my $arg (@ARGV)
 	}
 }
 
+# XXX FUNCTIONALIZE THIS PART WITH PRINTING SPT
+my %browserHash;
+foreach my $clientAddress ( keys %clients)
+{
+	while ( my ($key, $value) = each %{ $clients{$clientAddress}->{"browser"} } )
+	{
+		$browserHash{$key} += $value;
+	}
+}
+
+## XXX EXPERIMENTAL
+## Dtrace like printing
+my %osHash;
+foreach my $clientAddress ( keys %clients)
+{
+	while ( my ($key, $value) = each %{ $clients{$clientAddress}->{"os"} } )
+	{
+		$osHash{$key} += $value;
+	}
+}
+
+## Get string length of longest key
+my $llength = 0;
+foreach my $key ( keys %osHash )
+{
+	$llength = length($key) unless length($key) < $llength;
+}
+print "DEBUG: Longest llength is $llength\n";
+
+## Get max value of biggest value
+my ($rlength, $rTotal) = 0;
+foreach my $value ( values %osHash )
+{
+	$rlength = $value unless $value < $rlength;
+	#$rTotal += $value;
+}
+print "DEBUG: Longest rlength is $rlength\n";
+
+## TERM_WIDTH - string length - 1 for space is the max usable
+my $rWidth = $TERM_WIDTH - $llength;
+
+## Say it's 60 columns, calc biggest value that divides into it
+my $divisor = int $rlength / $rWidth;
+print ("DEBUG: Divisor is: $divisor\n");
+
+# Print Header
+printf("%${llength}s  %-.${rWidth}s %s\n",
+	("VALUE", "--- DISTRIBUTION " . "-" x ${rWidth}), "COUNT");
+
+# Print Data
+foreach my $key ( sort keys %osHash )
+{
+	#print("$key |" . ("@" x int $value / $divisor) . "$value\n");
+	printf("%${llength}s |%-${rWidth}s %s\n",
+		$key, ("@" x int $osHash{$key} / $divisor), $osHash{$key});
+}
+
+
+# Dump the processed data structure into a file for review
 open(DEBUGFILE, ">", "DEBUG.TXT") || die $?;
 print DEBUGFILE Data::Dumper->Dump([\%clients]);
 close(DEBUGFILE);
+open(OSDEBUG, ">", "OSDEBUG.TXT") || die $?;
+print OSDEBUG Data::Dumper->Dump([\%osHash]);
+close(OSDEBUG);
+open(BROWSER, ">", "BROWSER.TXT") || die $?;
+print BROWSER Data::Dumper->Dump([\%browserHash]);
+close(BROWSER);
+
+# Dump the uncatagorized data into a file for review
+open(UNCATAGORIZED, ">", "UNCATAGORIZED.TXT") || die $?;
+foreach (@uncatagorized) { print UNCATAGORIZED "$_\n"; }
+close(UNCATAGORIZED);
