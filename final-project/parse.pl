@@ -39,53 +39,96 @@ foreach my $arg (@ARGV)
 			    $bytesSentToClient, $referer,       $userAgent) =
 			    /^(\S+) (\S+) (\S+) \[(.+)\] \"(.+)\" (\S+) (\S+) \"(.*?)\" \"(.*?)\"/o;
 
+
+			# Set to epoch by default
+			my $date = 19700101;
+			given ($localTime)
+			{
+				when (/^(\d{1,2})\/JAN\/(\d{4})/i) {
+					$date = "$2" . "01" . "$1";
+				}
+				when (/^(\d{1,2})\/FEB\/(\d{4})/i) {
+					$date = "$2" . "02" . "$1";
+				}
+				when (/^(\d{1,2})\/MAR\/(\d{4})/i) {
+					$date = "$2" . "03" . "$1";
+				}
+				when (/^(\d{1,2})\/APR\/(\d{4})/i) {
+					$date = "$2" . "04" . "$1";
+				}
+				when (/^(\d{1,2})\/MAY\/(\d{4})/i) {
+					$date = "$2" . "05" . "$1";
+				}
+				when (/^(\d{1,2})\/JUN\/(\d{4})/i) {
+					$date = "$2" . "06" . "$1";
+				}
+				when (/^(\d{1,2})\/JUL\/(\d{4})/i) {
+					$date = "$2" . "07" . "$1";
+				}
+				when (/^(\d{1,2})\/AUG\/(\d{4})/i) {
+					$date = "$2" . "08" . "$1";
+				}
+				when (/^(\d{1,2})\/SEP\/(\d{4})/i) {
+					$date = "$2" . "09" . "$1";
+				}
+				when (/^(\d{1,2})\/OCT\/(\d{4})/i) {
+					$date = "$2" . "10" . "$1";
+				}
+				when (/^(\d{1,2})\/NOV\/(\d{4})/i) {
+					$date = "$2" . "11" . "$1";
+				}
+				when (/^(\d{1,2})\/DEC\/(\d{4})/i) {
+					$date = "$2" . "12" . "$1";
+				}
+			}
+
 			# Figure out which OS to tag as and normalize name
 			given ($userAgent)
 			{
 				when (/Windows NT (\d\.\d)/) {
-					$clients{$clientAddress}->{"os"}->{"Windows NT $1"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows NT $1"}->{$date} += 1;
 				}
 				when (/Windows XP/) {
-					$clients{$clientAddress}->{"os"}->{"Windows NT 5.1"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows NT 5.1"}->{$date} += 1;
 				}
 				when (/Windows NT;/) {
-					$clients{$clientAddress}->{"os"}->{"Windows NT"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows NT"}->{$date} += 1;
 				}
 				when (/Windows CE;/) {
-					$clients{$clientAddress}->{"os"}->{"Windows CE"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows CE"}->{$date} += 1;
 				}
 				when (/Windows 2000/) {
-					$clients{$clientAddress}->{"os"}->{"Windows 2000"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows 2000"}->{$date} += 1;
 				}
 				when (/Windows 98/) {
-					$clients{$clientAddress}->{"os"}->{"Windows 98"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows 98"}->{$date} += 1;
 				}
 				when (/Windows 95/) {
-					$clients{$clientAddress}->{"os"}->{"Windows 95"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows 95"}->{$date} += 1;
 				}
 				when (/Windows (\d\.\d)/) {
-					$clients{$clientAddress}->{"os"}->{"Windows $1"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows $1"}->{$date} += 1;
 				}
 				when (/Windows Phone (\d\.\d);/) {
-					$clients{$clientAddress}->{"os"}->{"Windows Phone $1"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Windows Phone $1"}->{$date} += 1;
 				}
 				when (/Android;/) {
-					$clients{$clientAddress}->{"os"}->{"Android"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Android"}->{$date} += 1;
 				}
 				when (/Android\/(\d*?\.\d*?);/ || /Android\/(\d*?\.\d*?\.\d*?) /) {
-					$clients{$clientAddress}->{"os"}->{"Android $1"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Android $1"}->{$date} += 1;
 				}
 				when (/iPad;/) {
-					$clients{$clientAddress}->{"os"}->{"iPad"} += 1;
+					$clients{$clientAddress}->{"os"}->{"iPad"}->{$date} += 1;
 				}
 				when (/iPhone;/) {
-					$clients{$clientAddress}->{"os"}->{"iPhone"} += 1;
+					$clients{$clientAddress}->{"os"}->{"iPhone"}->{$date} += 1;
 				}
 				when (/X11;/ || /Linux;/) {
-					$clients{$clientAddress}->{"os"}->{"Linux"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Linux"}->{$date} += 1;
 				}
 				when (/Mac OS X (\d*?)\.(\d*?);/ || /Mac OS X (\d*?)_(\d*?)/) {
-					$clients{$clientAddress}->{"os"}->{"Mac OS X $1.$2"} += 1;
+					$clients{$clientAddress}->{"os"}->{"Mac OS X $1.$2"}->{$date} += 1;
 				}
 				when (/bingbot/ || /Baiduspider/ || /MJ12bot/ || /SeznamBot/ ||
 				      /CCBot/ || /Googlebot/ || /YandexBot/ || /Cliqzbot/ ||
@@ -105,28 +148,28 @@ foreach my $arg (@ARGV)
 			given ($userAgent)
 			{
 				when (/MSIE (\d*?)\./) {
-					$clients{$clientAddress}->{"browser"}->{"MSIE $1"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"MSIE $1"}->{$date} += 1;
 				}
 				when ((/rv:11/) && (/Trident\/7.0/)) {
-					$clients{$clientAddress}->{"browser"}->{"MSIE 11"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"MSIE 11"}->{$date} += 1;
 				}
 				when (/Microsoft Internet Explorer\/(\d*?)\./) {
-					$clients{$clientAddress}->{"browser"}->{"MSIE $1"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"MSIE $1"}->{$date} += 1;
 				}
 				when (/Chrome\/(\d*?)\./) {
-					$clients{$clientAddress}->{"browser"}->{"Chrome $1"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"Chrome $1"}->{$date} += 1;
 				}
 				when (/Firefox\/(\d*?)\./) {
-					$clients{$clientAddress}->{"browser"}->{"Firefox $1"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"Firefox $1"}->{$date} += 1;
 				}
 				when (/Opera\/(\d*?)\./) {
-					$clients{$clientAddress}->{"browser"}->{"Opera $1"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"Opera $1"}->{$date} += 1;
 				}
 				when (/Opera (\d*?)\./) {
-					$clients{$clientAddress}->{"browser"}->{"Opera $1"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"Opera $1"}->{$date} += 1;
 				}
 				when (/Safari\/(\d*?)\./) {
-					$clients{$clientAddress}->{"browser"}->{"Safari $1"} += 1;
+					$clients{$clientAddress}->{"browser"}->{"Safari $1"}->{$date} += 1;
 				}
 				when (/bingbot/ || /Baiduspider/ || /MJ12bot/ || /SeznamBot/ ||
 				      /CCBot/ || /Googlebot/ || /YandexBot/ || /Cliqzbot/ ||
