@@ -5,6 +5,8 @@
 use v5.14;
 use warnings;
 use strict;
+
+my $debug = 1;
 use Data::Dumper;
 
 ################################################################################
@@ -144,76 +146,81 @@ foreach my $arg (@ARGV)
 	}
 }
 
-# XXX FUNCTIONALIZE THIS PART WITH PRINTING SPT
-my %browserHash;
-foreach my $clientAddress ( keys %clients)
+print_trends('os', 'osHash.txt');
+print_trends('browser', 'browserHash.txt');
+
+sub print_trends
 {
-	while ( my ($key, $value) = each %{ $clients{$clientAddress}->{"browser"} } )
+	# Quit unless two arguments passed else assign them
+	die "ERROR: Wrong number of arguments in subroutine" unless @_ == 2;
+	my $field = $_[0];
+	my $dumpfile = $_[1];
+
+	# Allocate temporary variables
+	my %workingHash;
+	my $lftLongestKey = 0;
+	my $rgtMaxValue = 0;
+	my $ctrUsableCols;
+	my $divisor;
+
+	# Extract total counts
+	foreach my $clientAddress ( keys %clients )
 	{
-		$browserHash{$key} += $value;
+		while ( my ($key, $value) = each %{ $clients{$clientAddress}->{$field} } )
+		{
+			$workingHash{$key} += $value;
+		}
+	}
+
+	# Iterate through resulting dataset to strlen of text and biggest value
+	while ( my ($key, $value) = each %workingHash )
+	{
+		$lftLongestKey = length($key) unless length($key) < $lftLongestKey;
+		$rgtMaxValue = $value unless $value < $rgtMaxValue;
+	}
+
+	# Calc columns by subtracting TERM_WIDTH w/longest key, 3 (printf whitespace), and longest value
+	$ctrUsableCols = $TERM_WIDTH - $lftLongestKey - 3;
+	$ctrUsableCols -= length($rgtMaxValue) >= length("COUNT") ? length($rgtMaxValue) : length("COUNT");
+
+	# Calc integer divisor based off max value divided by usable columns
+	$divisor = $rgtMaxValue > $ctrUsableCols ? int $rgtMaxValue / $ctrUsableCols : 1;
+
+	# TODO: Print the below to a file as well and mention in debug
+	# Print header
+	printf("%${lftLongestKey}s  %-.${ctrUsableCols}s %s\n",
+		("VALUE", "--- DISTRIBUTION " . "-" x ${ctrUsableCols}), "COUNT");
+
+	# Print data
+	foreach my $key ( sort keys %workingHash )
+	{
+		printf("%${lftLongestKey}s |%-${ctrUsableCols}s %s\n",
+			$key, ("@" x int $workingHash{$key} / $divisor), $workingHash{$key});
+	}
+
+	# Print resulting values and save working hash structure to text file if debugging is set
+	if ($debug)
+	{
+		print "DEBUG: lftLongestKey		= $lftLongestKey\n";
+		print "DEBUG: rgtMaxValue		= $rgtMaxValue\n";
+		print "DEBUG: ctrUsableCols		= $ctrUsableCols\n";
+		print "DEBUG: divisor			= $divisor\n";
+		print "DEBUG: data structure dumpfile	= $dumpfile\n";
+		open my $fh, ">", "$dumpfile" or die $?;
+		print $fh Data::Dumper->Dump([\%workingHash]);
+		close $fh;
 	}
 }
 
-## XXX EXPERIMENTAL
-## Dtrace like printing
-my %osHash;
-foreach my $clientAddress ( keys %clients)
+if ($debug)
 {
-	while ( my ($key, $value) = each %{ $clients{$clientAddress}->{"os"} } )
-	{
-		$osHash{$key} += $value;
-	}
+	# Dump the processed data structure into a file for review
+	open DEBUGFILE, ">", "DEBUG.txt" or die $?;
+	print DEBUGFILE Data::Dumper->Dump([\%clients]);
+	close DEBUGFILE;
+
+	# Dump the uncatagorized data into a file for review
+	open UNCATAGORIZED, ">", "UNCATAGORIZED.txt" or die $?;
+	foreach (@uncatagorized) { print UNCATAGORIZED "$_\n"; }
+	close UNCATAGORIZED;
 }
-
-## Get string length of longest key
-my $llength = 0;
-foreach my $key ( keys %osHash )
-{
-	$llength = length($key) unless length($key) < $llength;
-}
-print "DEBUG: Longest llength is $llength\n";
-
-## Get max value of biggest value
-my ($rlength, $rTotal) = 0;
-foreach my $value ( values %osHash )
-{
-	$rlength = $value unless $value < $rlength;
-	#$rTotal += $value;
-}
-print "DEBUG: Longest rlength is $rlength\n";
-
-## TERM_WIDTH - string length - 1 for space is the max usable
-my $rWidth = $TERM_WIDTH - $llength;
-
-## Say it's 60 columns, calc biggest value that divides into it
-my $divisor = int $rlength / $rWidth;
-print ("DEBUG: Divisor is: $divisor\n");
-
-# Print Header
-printf("%${llength}s  %-.${rWidth}s %s\n",
-	("VALUE", "--- DISTRIBUTION " . "-" x ${rWidth}), "COUNT");
-
-# Print Data
-foreach my $key ( sort keys %osHash )
-{
-	#print("$key |" . ("@" x int $value / $divisor) . "$value\n");
-	printf("%${llength}s |%-${rWidth}s %s\n",
-		$key, ("@" x int $osHash{$key} / $divisor), $osHash{$key});
-}
-
-
-# Dump the processed data structure into a file for review
-open(DEBUGFILE, ">", "DEBUG.TXT") || die $?;
-print DEBUGFILE Data::Dumper->Dump([\%clients]);
-close(DEBUGFILE);
-open(OSDEBUG, ">", "OSDEBUG.TXT") || die $?;
-print OSDEBUG Data::Dumper->Dump([\%osHash]);
-close(OSDEBUG);
-open(BROWSER, ">", "BROWSER.TXT") || die $?;
-print BROWSER Data::Dumper->Dump([\%browserHash]);
-close(BROWSER);
-
-# Dump the uncatagorized data into a file for review
-open(UNCATAGORIZED, ">", "UNCATAGORIZED.TXT") || die $?;
-foreach (@uncatagorized) { print UNCATAGORIZED "$_\n"; }
-close(UNCATAGORIZED);
