@@ -7,6 +7,7 @@ use warnings;
 use strict;
 use POSIX qw(ceil);
 use Data::Dumper;
+use Hash::Util;
 
 ################################################################################
 # Tunables
@@ -197,6 +198,10 @@ foreach my $arg (@ARGV)
 	}
 }
 
+# Make read-only to prevent programming errors during access from tampering with contents
+# Without this, size of %clients can increase 10-fold if care isn't taken when accessing it below
+Hash::Util::lock_hash_recurse(%clients);
+
 sort_trends('Distribution By OS', 'os', 'osHash.txt');
 sort_trends('Distribution By Browser', 'browser', 'browserHash.txt');
 
@@ -214,11 +219,14 @@ sub sort_trends
 	# Extract total counts
 	foreach my $clientAddress ( keys %clients )
 	{
-		while ( my ($key, $value) = each %{ $clients{$clientAddress}->{$field} } )
+		if(exists($clients{$clientAddress}->{$field}))
 		{
-			foreach my $dateCount ( values %{ $value } )
+			while ( my ($key, $value) = each %{ $clients{$clientAddress}->{$field} } )
 			{
-				$workingHash{$key} += $dateCount;
+				foreach my $dateCount ( values %{ $value } )
+				{
+					$workingHash{$key} += $dateCount;
+				}
 			}
 		}
 	}
@@ -235,9 +243,12 @@ sub sort_trends
 		# Extract total counts for each unique $field by date
 		foreach my $clientAddress ( keys %clients )
 		{
-			while ( my ($key, $value) = each %{ $clients{$clientAddress}->{$field}->{$newkey} } )
+			if(exists($clients{$clientAddress}->{$field}) && exists($clients{$clientAddress}->{$field}->{$newkey}))
 			{
-				$tempHash{$key} += $value;
+				while ( my ($key, $value) = each %{ $clients{$clientAddress}->{$field}->{$newkey} } )
+				{
+					$tempHash{$key} += $value;
+				}
 			}
 		}
 
