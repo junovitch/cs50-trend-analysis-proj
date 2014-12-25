@@ -5,6 +5,7 @@
 use v5.14;
 use warnings;
 use strict;
+use POSIX qw(ceil);
 
 my $debug = 1;
 use Data::Dumper;
@@ -189,34 +190,79 @@ foreach my $arg (@ARGV)
 	}
 }
 
-print_trends('os', 'osHash.txt');
-print_trends('browser', 'browserHash.txt');
+sort_trends('Distribution By OS', 'os', 'osHash.txt');
+sort_trends('Distribution By Browser', 'browser', 'browserHash.txt');
 
-sub print_trends
+sub sort_trends
 {
-	# Quit unless two arguments passed else assign them
-	die "ERROR: Wrong number of arguments in subroutine" unless @_ == 2;
-	my $field = $_[0];
-	my $dumpfile = $_[1];
+	# Quit unless correct number of arguments passed, else assign them
+	die "ERROR: Wrong number of arguments in subroutine" unless @_ == 3;
+	my $title = $_[0];
+	my $field = $_[1];
+	my $dumpfile = $_[2];
 
 	# Allocate temporary variables
 	my %workingHash;
-	my $lftLongestKey = 0;
-	my $rgtMaxValue = 0;
-	my $ctrUsableCols;
-	my $divisor;
 
 	# Extract total counts
 	foreach my $clientAddress ( keys %clients )
 	{
 		while ( my ($key, $value) = each %{ $clients{$clientAddress}->{$field} } )
 		{
-			$workingHash{$key} += $value;
+			foreach my $dateCount ( values %{ $value } )
+			{
+				$workingHash{$key} += $dateCount;
+			}
 		}
 	}
 
+	# Pass a reference to hash to print_trend subroutine for printing
+	print_trends("$title: ALL", \%workingHash);
+
+	# Extract by date distribution for each unique $field
+	foreach my $newkey ( sort keys %workingHash )
+	{
+		# Allocate temporary variables in this scope
+		my %tempHash;
+
+		# Extract total counts for each unique $field by date
+		foreach my $clientAddress ( keys %clients )
+		{
+			while ( my ($key, $value) = each %{ $clients{$clientAddress}->{$field}->{$newkey} } )
+			{
+				$tempHash{$key} += $value;
+			}
+		}
+
+		# Pass a reference to hash to print_trend subroutine for printing
+		print_trends("$title: $newkey", \%tempHash);
+	}
+
+	# Save working hash structure to text file if debugging is set
+	if ($debug)
+	{
+		print "DEBUG: data structure dumpfile	= $dumpfile\n";
+		open my $fh, ">", "$dumpfile" or die $?;
+		print $fh Data::Dumper->Dump([\%workingHash]);
+		close $fh;
+	}
+}
+
+sub print_trends
+{
+	# Quit unless correct number of arguments passed, else assign them
+	die "ERROR: Wrong number of arguments in subroutine" unless @_ == 2;
+	my $title = $_[0];
+	my %refToHash = %{$_[1]};
+
+	# Allocate temporary variables
+	my $lftLongestKey = 0;
+	my $rgtMaxValue = 0;
+	my $ctrUsableCols;
+	my $divisor;
+
 	# Iterate through resulting dataset to strlen of text and biggest value
-	while ( my ($key, $value) = each %workingHash )
+	while ( my ($key, $value) = each %refToHash )
 	{
 		$lftLongestKey = length($key) unless length($key) < $lftLongestKey;
 		$rgtMaxValue = $value unless $value < $rgtMaxValue;
@@ -227,31 +273,30 @@ sub print_trends
 	$ctrUsableCols -= length($rgtMaxValue) >= length("COUNT") ? length($rgtMaxValue) : length("COUNT");
 
 	# Calc integer divisor based off max value divided by usable columns
-	$divisor = $rgtMaxValue > $ctrUsableCols ? int $rgtMaxValue / $ctrUsableCols : 1;
+	$divisor = $rgtMaxValue > $ctrUsableCols ? POSIX::ceil($rgtMaxValue / $ctrUsableCols) : 1;
 
 	# TODO: Print the below to a file as well and mention in debug
 	# Print header
+	printf("%s\n", "=" x $TERM_WIDTH);
+	printf("%-${TERM_WIDTH}s\n", $title);
+	printf("%s\n", "=" x $TERM_WIDTH);
 	printf("%${lftLongestKey}s  %-.${ctrUsableCols}s %s\n",
 		("VALUE", "--- DISTRIBUTION " . "-" x ${ctrUsableCols}), "COUNT");
 
 	# Print data
-	foreach my $key ( sort keys %workingHash )
+	foreach my $key ( sort keys %refToHash )
 	{
 		printf("%${lftLongestKey}s |%-${ctrUsableCols}s %s\n",
-			$key, ("@" x int $workingHash{$key} / $divisor), $workingHash{$key});
+			$key, ("@" x int $refToHash{$key} / $divisor), $refToHash{$key});
 	}
 
-	# Print resulting values and save working hash structure to text file if debugging is set
+	# Print resulting values if debugging is set
 	if ($debug)
 	{
 		print "DEBUG: lftLongestKey		= $lftLongestKey\n";
 		print "DEBUG: rgtMaxValue		= $rgtMaxValue\n";
 		print "DEBUG: ctrUsableCols		= $ctrUsableCols\n";
 		print "DEBUG: divisor			= $divisor\n";
-		print "DEBUG: data structure dumpfile	= $dumpfile\n";
-		open my $fh, ">", "$dumpfile" or die $?;
-		print $fh Data::Dumper->Dump([\%workingHash]);
-		close $fh;
 	}
 }
 
