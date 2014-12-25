@@ -12,8 +12,14 @@ use Hash::Util;
 ################################################################################
 # Tunables
 ################################################################################
-my $DEBUG = 1;
-my $TERM_WIDTH = 80;
+my $DEBUG = 1;                # 0 by default, any other value to enable
+my $TERM_WIDTH = 80;          # 80 by default, 80x25 is standard cmd.exe size
+my $DATE_FORMAT = "YYYYMMDD"; # YYYYQQ by default, valid values are listed below
+
+################################################################################
+# Constants
+################################################################################
+my @VALID_DATE_FORMATS = ("YYYYMMDD", "YYYYMM", "YYYYQQ", "YYYY");
 
 ################################################################################
 # Variable Declarations
@@ -26,6 +32,9 @@ my @uncatagorized;
 ################################################################################
 
 die "No files specified.\n" unless @ARGV;
+
+my %DATE_FORMAT_CHECK = map { $_ => 1 } @VALID_DATE_FORMATS;
+die "Invalid Date Format Specified: \"$DATE_FORMAT\" not valid" unless exists($DATE_FORMAT_CHECK{$DATE_FORMAT});
 
 ################################################################################
 # Main Program
@@ -49,46 +58,65 @@ foreach my $arg (@ARGV)
 			    /^(\S+) (\S+) (\S+) \[(.+)\] \"(.+)\" (\S+) (\S+) \"(.*?)\" \"(.*?)\"/o;
 
 
-			# Set to epoch by default
-			my $date = 19700101;
-			given ($localTime)
+			my $date;
+			if ($localTime =~ /^(\d{1,2})\/(\w{3})\/(\d{4})/i)
 			{
-				when (/^(\d{1,2})\/JAN\/(\d{4})/i) {
-					$date = "$2" . "01" . "$1";
+				# Fill temporary variables based off each position pattern matched above
+				my ($day, $month, $year) = ($1, $2, $3);
+
+				# For all cases, set starting date. For YYYY case, this is it.
+				$date = "$year";
+
+				# For the by quarter-YYYYQQ case, append the quarter based on month
+				if ($DATE_FORMAT =~ /^YYYYQQ$/)
+				{
+					given ($month)
+					{
+						when (/JAN/i) { $date .= "Q1"; }
+						when (/FEB/i) { $date .= "Q1"; }
+						when (/MAR/i) { $date .= "Q1"; }
+						when (/APR/i) { $date .= "Q2"; }
+						when (/MAY/i) { $date .= "Q2"; }
+						when (/JUN/i) { $date .= "Q2"; }
+						when (/JUL/i) { $date .= "Q3"; }
+						when (/AUG/i) { $date .= "Q3"; }
+						when (/SEP/i) { $date .= "Q3"; }
+						when (/OCT/i) { $date .= "Q4"; }
+						when (/NOV/i) { $date .= "Q4"; }
+						when (/DEC/i) { $date .= "Q4"; }
+					}
 				}
-				when (/^(\d{1,2})\/FEB\/(\d{4})/i) {
-					$date = "$2" . "02" . "$1";
+
+				# For the by month cases, append the numeric value of the month
+				if ($DATE_FORMAT =~ /^YYYYMM$/ || $DATE_FORMAT =~ /^YYYYMMDD$/)
+				{
+					given ($month)
+					{
+						when (/JAN/i) { $date .= "01"; }
+						when (/FEB/i) { $date .= "02"; }
+						when (/MAR/i) { $date .= "03"; }
+						when (/APR/i) { $date .= "04"; }
+						when (/MAY/i) { $date .= "05"; }
+						when (/JUN/i) { $date .= "06"; }
+						when (/JUL/i) { $date .= "07"; }
+						when (/AUG/i) { $date .= "08"; }
+						when (/SEP/i) { $date .= "09"; }
+						when (/OCT/i) { $date .= "10"; }
+						when (/NOV/i) { $date .= "11"; }
+						when (/DEC/i) { $date .= "12"; }
+					}
 				}
-				when (/^(\d{1,2})\/MAR\/(\d{4})/i) {
-					$date = "$2" . "03" . "$1";
+
+				# For the full date string case, also append the two digit numeric day
+				if ($DATE_FORMAT =~ /^YYYYMMDD$/)
+				{
+					$date .= sprintf "%02d", $day;
 				}
-				when (/^(\d{1,2})\/APR\/(\d{4})/i) {
-					$date = "$2" . "04" . "$1";
-				}
-				when (/^(\d{1,2})\/MAY\/(\d{4})/i) {
-					$date = "$2" . "05" . "$1";
-				}
-				when (/^(\d{1,2})\/JUN\/(\d{4})/i) {
-					$date = "$2" . "06" . "$1";
-				}
-				when (/^(\d{1,2})\/JUL\/(\d{4})/i) {
-					$date = "$2" . "07" . "$1";
-				}
-				when (/^(\d{1,2})\/AUG\/(\d{4})/i) {
-					$date = "$2" . "08" . "$1";
-				}
-				when (/^(\d{1,2})\/SEP\/(\d{4})/i) {
-					$date = "$2" . "09" . "$1";
-				}
-				when (/^(\d{1,2})\/OCT\/(\d{4})/i) {
-					$date = "$2" . "10" . "$1";
-				}
-				when (/^(\d{1,2})\/NOV\/(\d{4})/i) {
-					$date = "$2" . "11" . "$1";
-				}
-				when (/^(\d{1,2})\/DEC\/(\d{4})/i) {
-					$date = "$2" . "12" . "$1";
-				}
+			}
+			else
+			{
+				# If unable to pattern match date, set to epoch start as a fallback
+				$date = "19700101";
 			}
 
 			# Figure out which OS to tag as and normalize name
