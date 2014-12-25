@@ -6,13 +6,12 @@ use v5.14;
 use warnings;
 use strict;
 use POSIX qw(ceil);
-
-my $debug = 1;
 use Data::Dumper;
 
 ################################################################################
-# Constants
+# Tunables
 ################################################################################
+my $DEBUG = 1;
 my $TERM_WIDTH = 80;
 
 ################################################################################
@@ -21,7 +20,15 @@ my $TERM_WIDTH = 80;
 my %clients;
 my @uncatagorized;
 
+################################################################################
+# Pre-Execution Checks
+################################################################################
+
 die "No files specified.\n" unless @ARGV;
+
+################################################################################
+# Main Program
+################################################################################
 foreach my $arg (@ARGV)
 {
 	my @files = glob $arg;
@@ -239,7 +246,7 @@ sub sort_trends
 	}
 
 	# Save working hash structure to text file if debugging is set
-	if ($debug)
+	if ($DEBUG)
 	{
 		print "DEBUG: data structure dumpfile	= $dumpfile\n";
 		open my $fh, ">", "$dumpfile" or die $?;
@@ -291,7 +298,7 @@ sub print_trends
 	}
 
 	# Print resulting values if debugging is set
-	if ($debug)
+	if ($DEBUG)
 	{
 		print "DEBUG: lftLongestKey		= $lftLongestKey\n";
 		print "DEBUG: rgtMaxValue		= $rgtMaxValue\n";
@@ -300,7 +307,7 @@ sub print_trends
 	}
 }
 
-if ($debug)
+if ($DEBUG)
 {
 	# Dump the processed data structure into a file for review
 	open DEBUGFILE, ">", "DEBUG.txt" or die $?;
