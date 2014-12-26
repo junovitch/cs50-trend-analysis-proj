@@ -2,7 +2,7 @@
 ################################################################################
 # Modules
 ################################################################################
-use v5.14;
+#use v5.00;
 use warnings;
 use strict;
 use POSIX qw(ceil);
@@ -12,7 +12,7 @@ use Hash::Util;
 ################################################################################
 # Tunables
 ################################################################################
-my $DEBUG = 1;                # 0 by default, any other value to enable
+my $DEBUG = 0;                # 0 by default, any other value to enable
 my $TERM_WIDTH = 80;          # 80 by default, 80x25 is standard cmd.exe size
 my $DATE_FORMAT = "YYYYMMDD"; # YYYYQQ by default, valid values are listed below
 
@@ -70,40 +70,40 @@ foreach my $arg (@ARGV)
 				# For the by quarter-YYYYQQ case, append the quarter based on month
 				if ($DATE_FORMAT =~ /^YYYYQQ$/)
 				{
-					given ($month)
+					for ($month)
 					{
-						when (/JAN/i) { $date .= "Q1"; }
-						when (/FEB/i) { $date .= "Q1"; }
-						when (/MAR/i) { $date .= "Q1"; }
-						when (/APR/i) { $date .= "Q2"; }
-						when (/MAY/i) { $date .= "Q2"; }
-						when (/JUN/i) { $date .= "Q2"; }
-						when (/JUL/i) { $date .= "Q3"; }
-						when (/AUG/i) { $date .= "Q3"; }
-						when (/SEP/i) { $date .= "Q3"; }
-						when (/OCT/i) { $date .= "Q4"; }
-						when (/NOV/i) { $date .= "Q4"; }
-						when (/DEC/i) { $date .= "Q4"; }
+						if    (/JAN/i) { $date .= "Q1"; }
+						elsif (/FEB/i) { $date .= "Q1"; }
+						elsif (/MAR/i) { $date .= "Q1"; }
+						elsif (/APR/i) { $date .= "Q2"; }
+						elsif (/MAY/i) { $date .= "Q2"; }
+						elsif (/JUN/i) { $date .= "Q2"; }
+						elsif (/JUL/i) { $date .= "Q3"; }
+						elsif (/AUG/i) { $date .= "Q3"; }
+						elsif (/SEP/i) { $date .= "Q3"; }
+						elsif (/OCT/i) { $date .= "Q4"; }
+						elsif (/NOV/i) { $date .= "Q4"; }
+						elsif (/DEC/i) { $date .= "Q4"; }
 					}
 				}
 
 				# For the by month cases, append the numeric value of the month
 				if ($DATE_FORMAT =~ /^YYYYMM$/ || $DATE_FORMAT =~ /^YYYYMMDD$/)
 				{
-					given ($month)
+					for ($month)
 					{
-						when (/JAN/i) { $date .= "01"; }
-						when (/FEB/i) { $date .= "02"; }
-						when (/MAR/i) { $date .= "03"; }
-						when (/APR/i) { $date .= "04"; }
-						when (/MAY/i) { $date .= "05"; }
-						when (/JUN/i) { $date .= "06"; }
-						when (/JUL/i) { $date .= "07"; }
-						when (/AUG/i) { $date .= "08"; }
-						when (/SEP/i) { $date .= "09"; }
-						when (/OCT/i) { $date .= "10"; }
-						when (/NOV/i) { $date .= "11"; }
-						when (/DEC/i) { $date .= "12"; }
+						if    (/JAN/i) { $date .= "01"; }
+						elsif (/FEB/i) { $date .= "02"; }
+						elsif (/MAR/i) { $date .= "03"; }
+						elsif (/APR/i) { $date .= "04"; }
+						elsif (/MAY/i) { $date .= "05"; }
+						elsif (/JUN/i) { $date .= "06"; }
+						elsif (/JUL/i) { $date .= "07"; }
+						elsif (/AUG/i) { $date .= "08"; }
+						elsif (/SEP/i) { $date .= "09"; }
+						elsif (/OCT/i) { $date .= "10"; }
+						elsif (/NOV/i) { $date .= "11"; }
+						elsif (/DEC/i) { $date .= "12"; }
 					}
 				}
 
@@ -120,54 +120,54 @@ foreach my $arg (@ARGV)
 			}
 
 			# Figure out which OS to tag as and normalize name
-			given ($userAgent)
+			for ($userAgent)
 			{
-				when (/Windows NT (\d\.\d)/) {
+				if    (/Windows NT (\d\.\d)/) {
 					$clients{$clientAddress}->{"os"}->{"Windows NT $1"}->{$date} += 1;
 				}
-				when (/Windows XP/) {
+				elsif (/Windows XP/) {
 					$clients{$clientAddress}->{"os"}->{"Windows NT 5.1"}->{$date} += 1;
 				}
-				when (/Windows NT;/) {
+				elsif (/Windows NT;/) {
 					$clients{$clientAddress}->{"os"}->{"Windows NT"}->{$date} += 1;
 				}
-				when (/Windows CE;/) {
+				elsif (/Windows CE;/) {
 					$clients{$clientAddress}->{"os"}->{"Windows CE"}->{$date} += 1;
 				}
-				when (/Windows 2000/) {
+				elsif (/Windows 2000/) {
 					$clients{$clientAddress}->{"os"}->{"Windows 2000"}->{$date} += 1;
 				}
-				when (/Windows 98/) {
+				elsif (/Windows 98/) {
 					$clients{$clientAddress}->{"os"}->{"Windows 98"}->{$date} += 1;
 				}
-				when (/Windows 95/) {
+				elsif (/Windows 95/) {
 					$clients{$clientAddress}->{"os"}->{"Windows 95"}->{$date} += 1;
 				}
-				when (/Windows (\d\.\d)/) {
+				elsif (/Windows (\d\.\d)/) {
 					$clients{$clientAddress}->{"os"}->{"Windows $1"}->{$date} += 1;
 				}
-				when (/Windows Phone (\d\.\d);/) {
+				elsif (/Windows Phone (\d\.\d);/) {
 					$clients{$clientAddress}->{"os"}->{"Windows Phone $1"}->{$date} += 1;
 				}
-				when (/Android;/) {
+				elsif (/Android;/) {
 					$clients{$clientAddress}->{"os"}->{"Android"}->{$date} += 1;
 				}
-				when (/Android\/(\d*?\.\d*?);/ || /Android\/(\d*?\.\d*?\.\d*?) /) {
+				elsif (/Android\/(\d*?\.\d*?);/ || /Android\/(\d*?\.\d*?\.\d*?) /) {
 					$clients{$clientAddress}->{"os"}->{"Android $1"}->{$date} += 1;
 				}
-				when (/iPad;/) {
+				elsif (/iPad;/) {
 					$clients{$clientAddress}->{"os"}->{"iPad"}->{$date} += 1;
 				}
-				when (/iPhone;/) {
+				elsif (/iPhone;/) {
 					$clients{$clientAddress}->{"os"}->{"iPhone"}->{$date} += 1;
 				}
-				when (/X11;/ || /Linux;/) {
+				elsif (/X11;/ || /Linux;/) {
 					$clients{$clientAddress}->{"os"}->{"Linux"}->{$date} += 1;
 				}
-				when (/Mac OS X (\d*?)\.(\d*?);/ || /Mac OS X (\d*?)_(\d*?)/) {
+				elsif (/Mac OS X (\d*?)\.(\d*?);/ || /Mac OS X (\d*?)_(\d*?)/) {
 					$clients{$clientAddress}->{"os"}->{"Mac OS X $1.$2"}->{$date} += 1;
 				}
-				when (/bingbot/ || /Baiduspider/ || /MJ12bot/ || /SeznamBot/ ||
+				elsif (/bingbot/ || /Baiduspider/ || /MJ12bot/ || /SeznamBot/ ||
 				      /CCBot/ || /Googlebot/ || /YandexBot/ || /Cliqzbot/ ||
 				      /Yahoo! Slurp/ || /archive\.org_bot/ || /NerdyBot/ ||
 				      /AhrefsBot/ || /Sogou web spider/ || /sukibot_heritrix/ ||
@@ -176,39 +176,39 @@ foreach my $arg (@ARGV)
 				      /Microsoft-WebDAV-MiniRedir/ || /AdsBot-Google/) {
 					next; # ignore these
 				}
-				default {
+				else {
 					push @uncatagorized, $userAgent;
 				}
 			}
 
 			# Figure out which browser to tag as and normalize name
-			given ($userAgent)
+			for ($userAgent)
 			{
-				when (/MSIE (\d*?)\./) {
+				if    (/MSIE (\d*?)\./) {
 					$clients{$clientAddress}->{"browser"}->{"MSIE $1"}->{$date} += 1;
 				}
-				when ((/rv:11/) && (/Trident\/7.0/)) {
+				elsif ((/rv:11/) && (/Trident\/7.0/)) {
 					$clients{$clientAddress}->{"browser"}->{"MSIE 11"}->{$date} += 1;
 				}
-				when (/Microsoft Internet Explorer\/(\d*?)\./) {
+				elsif (/Microsoft Internet Explorer\/(\d*?)\./) {
 					$clients{$clientAddress}->{"browser"}->{"MSIE $1"}->{$date} += 1;
 				}
-				when (/Chrome\/(\d*?)\./) {
+				elsif (/Chrome\/(\d*?)\./) {
 					$clients{$clientAddress}->{"browser"}->{"Chrome $1"}->{$date} += 1;
 				}
-				when (/Firefox\/(\d*?)\./) {
+				elsif (/Firefox\/(\d*?)\./) {
 					$clients{$clientAddress}->{"browser"}->{"Firefox $1"}->{$date} += 1;
 				}
-				when (/Opera\/(\d*?)\./) {
+				elsif (/Opera\/(\d*?)\./) {
 					$clients{$clientAddress}->{"browser"}->{"Opera $1"}->{$date} += 1;
 				}
-				when (/Opera (\d*?)\./) {
+				elsif (/Opera (\d*?)\./) {
 					$clients{$clientAddress}->{"browser"}->{"Opera $1"}->{$date} += 1;
 				}
-				when (/Safari\/(\d*?)\./) {
+				elsif (/Safari\/(\d*?)\./) {
 					$clients{$clientAddress}->{"browser"}->{"Safari $1"}->{$date} += 1;
 				}
-				when (/bingbot/ || /Baiduspider/ || /MJ12bot/ || /SeznamBot/ ||
+				elsif (/bingbot/ || /Baiduspider/ || /MJ12bot/ || /SeznamBot/ ||
 				      /CCBot/ || /Googlebot/ || /YandexBot/ || /Cliqzbot/ ||
 				      /Yahoo! Slurp/ || /archive\.org_bot/ || /NerdyBot/ ||
 				      /AhrefsBot/ || /Sogou web spider/ || /sukibot_heritrix/ ||
@@ -217,7 +217,7 @@ foreach my $arg (@ARGV)
 				      /Microsoft-WebDAV-MiniRedir/ || /AdsBot-Google/) {
 					next; # ignore these
 				}
-				default {
+				else {
 					push @uncatagorized, $userAgent;
 				}
 			}
