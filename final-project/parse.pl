@@ -230,6 +230,10 @@ foreach my $arg (@ARGV)
 # Without this, size of %clients can increase 10-fold if care isn't taken when accessing it below
 Hash::Util::lock_hash_recurse(%clients);
 
+# With source data read only, call dumping them to a file if $DEBUG is set
+if ($DEBUG) { debug_dump_hash("DEBUG.txt", \%clients); }
+if ($DEBUG) { debug_dump_array("UNCATAGORIZED.txt", \@uncatagorized); }
+
 sort_trends('Distribution By OS', 'os', 'osHash.txt');
 sort_trends('Distribution By Browser', 'browser', 'browserHash.txt');
 
@@ -285,13 +289,7 @@ sub sort_trends
 	}
 
 	# Save working hash structure to text file if debugging is set
-	if ($DEBUG)
-	{
-		print "DEBUG: data structure dumpfile	= $dumpfile\n";
-		open my $fh, ">", "$dumpfile" or die $?;
-		print $fh Data::Dumper->Dump([\%workingHash]);
-		close $fh;
-	}
+	if ($DEBUG) { debug_dump_hash("$dumpfile", \%workingHash); }
 }
 
 sub print_trends
@@ -346,15 +344,28 @@ sub print_trends
 	}
 }
 
-if ($DEBUG)
+sub debug_dump_array
 {
-	# Dump the processed data structure into a file for review
-	open DEBUGFILE, ">", "DEBUG.txt" or die $?;
-	print DEBUGFILE Data::Dumper->Dump([\%clients]);
-	close DEBUGFILE;
+	# Quit unless correct number of arguments passed, else assign them
+	die "ERROR: Wrong number of arguments in subroutine" unless @_ == 2;
+	my $dumpfile   = $_[0];
+	my @refToArray = @{$_[1]};
 
-	# Dump the uncatagorized data into a file for review
-	open UNCATAGORIZED, ">", "UNCATAGORIZED.txt" or die $?;
-	foreach (@uncatagorized) { print UNCATAGORIZED "$_\n"; }
-	close UNCATAGORIZED;
+	print "DEBUG: array dumpfile		= $dumpfile\n";
+	open my $fh, ">", "$dumpfile" or die $?;
+	foreach (@refToArray) { print $fh "$_\n"; }
+	close $fh;
+}
+
+sub debug_dump_hash
+{
+	# Quit unless correct number of arguments passed, else assign them
+	die "ERROR: Wrong number of arguments in subroutine" unless @_ == 2;
+	my $dumpfile  = $_[0];
+	my %refToHash = %{$_[1]};
+
+	print "DEBUG: data structure dumpfile	= $dumpfile\n";
+	open my $fh, ">", "$dumpfile" or die $?;
+	print $fh Data::Dumper->Dump([\%refToHash]);
+	close $fh;
 }
