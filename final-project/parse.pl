@@ -37,7 +37,7 @@ variable.
 #use v5.00;
 use warnings;
 use strict;
-use POSIX qw(ceil);
+use POSIX qw(ceil floor);
 use Data::Dumper;
 use Hash::Util;
 
@@ -49,12 +49,14 @@ Three options can be set by the user.
   $DEBUG         0 by default, any other value to enable
   $TERM_WIDTH    80 by default, 80x25 is standard cmd.exe size
   $DATE_FORMAT   YYYYQQ by default, valid values are listed below
+  $RESULTS_FILE  Any text file name to save the trend analysis results
 
 =cut
 ################################################################################
 my $DEBUG = 0;
 my $TERM_WIDTH = 80;
 my $DATE_FORMAT = "YYYYQQ";
+my $RESULTS_FILE = "parse_trends_output.txt";
 
 ################################################################################
 =head1 CONSTANTS/VARIABLES
@@ -105,9 +107,15 @@ Hash::Util::lock_hash_recurse(%clients);
 if ($DEBUG) { debug_dump_hash("DEBUG.txt", \%clients); }
 if ($DEBUG) { debug_dump_array("UNCATAGORIZED.txt", \@uncatagorized); }
 
+# Open a file handle to save the results to
+open my $results_fh, ">", "$RESULTS_FILE" or die $?;
+
 # Call sort_trends subroutine to extract usable info out of our data
 sort_trends('Distribution By OS', 'os', 'osHash.txt');
 sort_trends('Distribution By Browser', 'browser', 'browserHash.txt');
+
+# Close the file handle
+close $results_fh;
 
 ################################################################################
 =head1 SUBROUTINES
@@ -417,6 +425,7 @@ sub print_trends
 	my $rgtMaxValue   = 0;
 	my $ctrUsableCols;
 	my $divisor;
+	my $txt;
 
 	# Iterate through resulting dataset to strlen of text and biggest value
 	while ( my ($key, $value) = each %refToHash )
@@ -432,20 +441,25 @@ sub print_trends
 	# Calc integer divisor based off max value divided by usable columns
 	$divisor = $rgtMaxValue > $ctrUsableCols ? POSIX::ceil($rgtMaxValue / $ctrUsableCols) : 1;
 
-	# TODO: Print the below to a file as well and mention in debug
-	# Print header
-	printf("%s\n", "=" x $TERM_WIDTH);
-	printf("%-${TERM_WIDTH}s\n", $title);
-	printf("%s\n", "=" x $TERM_WIDTH);
-	printf("%${lftLongestKey}s  %-.${ctrUsableCols}s %s\n",
-		("VALUE", "--- DISTRIBUTION " . "-" x ${ctrUsableCols}), "COUNT");
+	# Concatenate header text together
+	$txt  = sprintf "%s\n",                  "=" x $TERM_WIDTH;
+	$txt .= sprintf "%-${TERM_WIDTH}s\n",    $title;
+	$txt .= sprintf "%s\n",                  "=" x $TERM_WIDTH;
+	$txt .= sprintf "%${lftLongestKey}s  ",  "VALUE";
+	$txt .= sprintf "%-.${ctrUsableCols}s ", "--- DISTRIBUTION " . "-" x ${ctrUsableCols};
+	$txt .= sprintf "%s\n",                  "COUNT";
 
-	# Print data
+	# Concatenate data text together
 	foreach my $key ( sort keys %refToHash )
 	{
-		printf("%${lftLongestKey}s |%-${ctrUsableCols}s %s\n",
-			$key, ("@" x int $refToHash{$key} / $divisor), $refToHash{$key});
+		$txt .= sprintf "%${lftLongestKey}s |", $key;
+		$txt .= sprintf "%-${ctrUsableCols}s ", "@" x POSIX::floor($refToHash{$key} / $divisor);
+		$txt .= sprintf "%s\n",                 $refToHash{$key};
 	}
+
+	# Print results to screen first and then to results file handle
+	print "$txt";
+	print $results_fh "$txt";
 
 	# Print resulting values if debugging is set
 	if ($DEBUG)
