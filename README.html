@@ -1,0 +1,138 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#USER-TUNABLES">USER TUNABLES</a></li>
+  <li><a href="#CONSTANTS-VARIABLES">CONSTANTS/VARIABLES</a></li>
+  <li><a href="#SUBROUTINES">SUBROUTINES</a>
+    <ul>
+      <li><a href="#parse_input_file">parse_input_file()</a></li>
+      <li><a href="#sort_trends">sort_trends()</a></li>
+      <li><a href="#print_trends">print_trends()</a></li>
+      <li><a href="#debug_dumparray-and-debug_dump_hash">debug_dumparray() and debug_dump_hash()</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>parse.pl</p>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>Reads through input log files and stores data inside a complex data structure for trend analysis. The results of the trend analysis are printed out in a Dtrace like distribution graph. Each unique key (OS in the example below) is printed out by when they are seen in a format configured by the DATE_FORMAT variable.</p>
+
+<pre><code>  ============================================================
+  Distribution By OS: ALL
+  ============================================================
+              VALUE  --- DISTRIBUTION ------------------ COUNT
+     Windows NT 5.0 |                                    432
+     Windows NT 5.1 |@@@@@@@@@@@@                        7243
+     Windows NT 5.2 |                                    94
+     Windows NT 6.0 |@                                   1004
+     Windows NT 6.1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  19832
+     Windows NT 6.2 |@@@                                 1759
+     Windows NT 6.3 |@@@@@                               3128
+  ============================================================
+  Distribution By OS: Windows NT 5.2
+  ============================================================
+   VALUE  --- DISTRIBUTION ----------------------------- COUNT
+  2014Q2 |@@@@@@                                         13
+  2014Q3 |@@@@@@@                                        15
+  2014Q4 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@              66</code></pre>
+
+<h1 id="USER-TUNABLES">USER TUNABLES</h1>
+
+<p>Three options can be set by the user.</p>
+
+<pre><code>  $DEBUG         0 by default, any other value to enable
+  $TERM_WIDTH    80 by default, 80x25 is standard cmd.exe size
+  $DATE_FORMAT   YYYYQQ by default, valid values are listed below
+  $RESULTS_FILE  Any text file name to save the trend analysis results</code></pre>
+
+<h1 id="CONSTANTS-VARIABLES">CONSTANTS/VARIABLES</h1>
+
+<p>Valid date values:</p>
+
+<pre><code>  @VALID_DATE_FORMATS = (&quot;YYYYMMDD&quot;, &quot;YYYYMM&quot;, &quot;YYYYQQ&quot;, &quot;YYYY&quot;);</code></pre>
+
+<p>Two variables are allocated for &quot;global&quot; usage:</p>
+
+<pre><code>  %clients       A structure of nested key =&gt; value mappings
+  @uncatagorized Storage of potentially useful data not matched by any regex</code></pre>
+
+<h1 id="SUBROUTINES">SUBROUTINES</h1>
+
+<h2 id="parse_input_file">parse_input_file()</h2>
+
+<p>The parse_input_file subroutine expects one argument, a filename. It&#39;s role is to process the contents of that file and read usable data into the %clients hash data structure (a Hash of Hash of Hash of Hash). The result is four layers are stored to represent unique data.</p>
+
+<p>An example of one client&#39;s nested key value pairs as shown by Data::Dumper</p>
+
+<pre><code>  &#39;192.168.1.100&#39; =&gt; {
+    &#39;browser&#39; =&gt; {
+        &#39;Firefox 27&#39; =&gt; {
+            &#39;20141219&#39; =&gt; 1
+         }
+     },
+    &#39;os&#39; =&gt; {
+        &#39;Windows NT 6.1&#39; =&gt; {
+            &#39;20141219&#39; =&gt; 1
+        }
+     }
+  },</code></pre>
+
+<h2 id="sort_trends">sort_trends()</h2>
+
+<p>Sort trends searches for data in the %clients hash structure.</p>
+
+<p>It is called with three arguements:</p>
+
+<pre><code>  1. Title of the graph
+  2. Field in the second level of the hash structure
+  3. A text file for if debugging is enabled</code></pre>
+
+<p>sort_trends(&#39;Distribution By OS&#39;, &#39;os&#39;, &#39;osHash.txt&#39;);</p>
+
+<h2 id="print_trends">print_trends()</h2>
+
+<p>Print trends prints data in the hash it is provided both by field then by date inside each entry.</p>
+
+<p>It is called with two arguements:</p>
+
+<pre><code>  1. Title of the graph
+  2. Reference to hash.</code></pre>
+
+<p>print_trends(&quot;$title: ALL&quot;, \%workingHash);</p>
+
+<h2 id="debug_dumparray-and-debug_dump_hash">debug_dumparray() and debug_dump_hash()</h2>
+
+<p>Prints reference hash or array into the file specified for later debugging efforts</p>
+
+<p>Both subroutines are called with two arguements:</p>
+
+<pre><code>  1. A text file for to put date into
+  2. Reference to hash or array</code></pre>
+
+<p>if ($DEBUG) { debug_dump_hash(&quot;DEBUG.txt&quot;, \%clients); }</p>
+
+<p>if ($DEBUG) { debug_dump_array(&quot;UNCATAGORIZED.txt&quot;, \@uncatagorized); }</p>
+
+
+</body>
+
+</html>
+
+
